@@ -1,9 +1,9 @@
-# rbtree [![License](https://img.shields.io/:license-apache-blue.svg)](https://opensource.org/licenses/Apache-2.0) [![GoDoc](https://godoc.org/github.com/cdongyang/rbtree?status.svg)](https://godoc.org/github.com/cdongyang/rbtree) [![Go Report Card](https://goreportcard.com/badge/github.com/cdongyang/library)](https://goreportcard.com/report/github.com/cdongyang/library) [![gocover.io](https://gocover.io/github.com/cdongyang/rbtree)](https://gocover.io/github.com/cdongyang/rbtree)
+# rbtree [![License](https://img.shields.io/:license-apache-blue.svg)](https://opensource.org/licenses/Apache-2.0) [![GoDoc](https://godoc.org/github.com/cdongyang/rbtree?status.svg)](https://godoc.org/github.com/cdongyang/rbtree) [![Go Report Card](https://goreportcard.com/badge/github.com/cdongyang/rbtree)](https://goreportcard.com/report/github.com/cdongyang/rbtree) [![gocover.io](https://gocover.io/github.com/cdongyang/rbtree)](https://gocover.io/github.com/cdongyang/rbtree)
 ## A red-black tree with an API similar to C++ STL's.
 a high performance red-black tree with less heap objects.
 ## Installtion
 ```
-    go get github.com/cdongyang/rbtree
+    go get -u -v github.com/cdongyang/rbtree
 ```
 ## Test
 run test:
