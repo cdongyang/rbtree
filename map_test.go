@@ -2,33 +2,47 @@ package rbtree_test
 
 import (
 	"sort"
+	"strconv"
 	"testing"
 
 	"github.com/cdongyang/library/algorithm"
 	"github.com/cdongyang/library/randint"
-	"github.com/cdongyang/library/rbtree"
+	"github.com/cdongyang/rbtree"
 )
 
-func NewSet(unique bool) *rbtree.Set {
+func NewMap(unique bool) *rbtree.Map {
+	var newFun = rbtree.NewMultiMap
 	if unique {
-		return rbtree.NewSet(int(0), rbtree.CompareInt)
+		newFun = rbtree.NewMap
 	}
-	return rbtree.NewMultiSet(int(0), rbtree.CompareInt)
-	//fmt.Printf("header: %p header: %+v\n", header, header)
+	return newFun("", new(int), func(a, b interface{}) int {
+		aa, err := strconv.Atoi(a.(string))
+		if err != nil {
+			panic(err.Error())
+		}
+		bb, err := strconv.Atoi(b.(string))
+		if err != nil {
+			panic(err.Error())
+		}
+		return aa - bb
+	})
 }
 
-func testSet(t *testing.T, length int, unique bool) {
+func testMap(t *testing.T, length int, unique bool) {
 	// init
 	var rand = randint.Rand{First: 23456, Add: 12345, Mod: 1000}
 	var max = rand.Int()%length + 1
-	var intSlice1K = make([]int, length)
-	for i := range intSlice1K {
-		intSlice1K[i] = (rand.Int() % max) + 1
+	var intSlice = make([]int, length)
+	for i := range intSlice {
+		intSlice[i] = (rand.Int() % max) + 1
 	}
 	max++
+	var equal = func(n rbtree.MapNode, val int) bool {
+		return n.GetKey() == strconv.Itoa(val) && *(n.GetVal().(*int)) == val
+	}
 	//fmt.Println("offsetNode:", offsetNode)
-	var tree = NewSet(unique)
-	var count = make(map[int]int, len(intSlice1K))
+	var tree = NewMap(unique)
+	var count = make(map[int]int, len(intSlice))
 	// test empty tree and empty tree Begin and End
 	if !tree.Empty() {
 		t.Fatal("empty")
@@ -42,19 +56,19 @@ func testSet(t *testing.T, length int, unique bool) {
 	var index int
 
 	//test empty tree LowerBound method
-	iter = tree.LowerBound(intSlice1K[0])
+	iter = tree.LowerBound(strconv.Itoa(intSlice[0]))
 	if iter != tree.End() {
 		t.Fatal("empty tree LowerBound error")
 	}
 	//test empty tree UpperBound method
-	iter = tree.UpperBound(intSlice1K[0])
+	iter = tree.UpperBound(strconv.Itoa(intSlice[0]))
 	if iter != tree.End() {
 		t.Fatal("empty tree UpperBound error")
 	}
 
 	//test Insert,Begin,End method
-	var maxVal, minVal = intSlice1K[0], intSlice1K[0]
-	for _, val := range intSlice1K {
+	var maxVal, minVal = intSlice[0], intSlice[0]
+	for _, val := range intSlice {
 		if val > maxVal {
 			maxVal = val
 		}
@@ -62,23 +76,24 @@ func testSet(t *testing.T, length int, unique bool) {
 			minVal = val
 		}
 		//fmt.Println("insert", val)
-		_, ok := tree.Insert(val)
+		var tmp = val
+		_, ok := tree.Insert(strconv.Itoa(val), &tmp)
 		if !tree.Unique() && !ok || tree.Unique() && ok == (count[val] != 0) {
 			t.Fatal("insert error", ok, count[val], val)
 		}
-		if tree.Begin().GetData() != minVal || tree.Most(0) != tree.Leftmost() {
-			t.Fatal("leftmost error", tree.Begin().GetData(), minVal)
+		if !equal(tree.Begin(), minVal) || tree.Most(0) != tree.Leftmost() {
+			t.Fatalf("leftmost error %v %v %v %v\n", tree.Begin().GetKey(), tree.Begin().GetVal(), *(tree.Begin().GetVal().(*int)), minVal)
 		}
-		if tree.End().Last().GetData() != maxVal || tree.Most(1) != tree.Rightmost() {
-			t.Fatal("rightmost error", tree.End().Last().GetData(), maxVal)
+		if !equal(tree.End().Last(), maxVal) || tree.Most(1) != tree.Rightmost() {
+			t.Fatal("rightmost error", tree.End().Last().GetKey(), maxVal)
 		}
 		if tree.Unique() {
 			count[val] = 1
 		} else {
 			count[val]++
 		}
-		if tree.Count(val) != count[val] {
-			t.Fatal("count error", tree.Count(val), count[val])
+		if tree.Count(strconv.Itoa(val)) != count[val] {
+			t.Fatal("count error", tree.Count(strconv.Itoa(val)), count[val])
 		}
 		_, size := tree.Check()
 		if size != tree.Size() {
@@ -87,42 +102,42 @@ func testSet(t *testing.T, length int, unique bool) {
 	}
 
 	// test Compare
-	if tree.Begin().GetData() != minVal {
+	if !equal(tree.Begin(), minVal) {
 		t.Fatal("Compare error")
 	}
-	var sortSlice = make([]int, len(intSlice1K))
-	copy(sortSlice, intSlice1K)
+	var sortSlice = make([]int, len(intSlice))
+	copy(sortSlice, intSlice)
 	sort.IntSlice(sortSlice).Sort()
 
 	//test LowerBound method
-	iter = tree.LowerBound(intSlice1K[0])
-	index = algorithm.LowerBound(algorithm.SearchIntSlice{sortSlice, intSlice1K[0]})
+	iter = tree.LowerBound(strconv.Itoa(intSlice[0]))
+	index = algorithm.LowerBound(algorithm.SearchIntSlice{sortSlice, intSlice[0]})
 	if iter == tree.End() && index == len(sortSlice) {
 		//ok
-	} else if iter.GetData() == intSlice1K[0] {
+	} else if equal(iter, intSlice[0]) {
 		//ok
 	} else {
 		t.Fatal("LowerBound error")
 	}
 	//test UpperBound method
-	iter = tree.UpperBound(intSlice1K[0])
-	index = algorithm.UpperBound(algorithm.SearchIntSlice{sortSlice, intSlice1K[0]})
+	iter = tree.UpperBound(strconv.Itoa(intSlice[0]))
+	index = algorithm.UpperBound(algorithm.SearchIntSlice{sortSlice, intSlice[0]})
 	if iter == tree.End() && index == len(sortSlice) {
 		//ok
-	} else if iter.GetData() == intSlice1K[0] {
+	} else if equal(iter, intSlice[0]) {
 	}
 	//test Begin and EndNode method
-	if tree.Begin().GetData() != sortSlice[0] {
-		t.Fatal("begin error", tree.Begin().GetData(), sortSlice[0])
+	if !equal(tree.Begin(), sortSlice[0]) {
+		t.Fatal("begin error", tree.Begin().GetKey(), sortSlice[0])
 	}
-	if tree.End().Last().GetData() != sortSlice[len(sortSlice)-1] {
-		t.Fatal("endNode error", tree.Begin().GetData(), sortSlice[len(sortSlice)-1])
+	if !equal(tree.End().Last(), sortSlice[len(sortSlice)-1]) {
+		t.Fatal("endNode error", tree.Begin().GetKey(), sortSlice[len(sortSlice)-1])
 	}
 	//test Begin and End and Next method
 	var i int
 	for it := tree.Begin(); it != tree.End(); it = it.Next() {
-		if it.GetData() != sortSlice[i] {
-			t.Fatal("go through error", it.GetData(), sortSlice[i])
+		if !equal(it, sortSlice[i]) {
+			t.Fatal("go through error", it.GetKey(), sortSlice[i])
 		}
 		if tree.Unique() {
 			for i+1 < len(sortSlice) && sortSlice[i+1] == sortSlice[i] {
@@ -134,8 +149,8 @@ func testSet(t *testing.T, length int, unique bool) {
 	//test End and Last method
 	i = len(sortSlice) - 1
 	for it := tree.End().Last(); ; it = it.Last() {
-		if it.GetData() != sortSlice[i] {
-			t.Fatal("go back tree error", it.GetData(), sortSlice[i])
+		if !equal(it, sortSlice[i]) {
+			t.Fatal("go back tree error", it.GetKey(), sortSlice[i])
 		}
 		if tree.Unique() {
 			for i > 0 && sortSlice[i-1] == sortSlice[i] {
@@ -148,16 +163,16 @@ func testSet(t *testing.T, length int, unique bool) {
 		}
 	}
 	//test Find method
-	iter = tree.Find(intSlice1K[0])
-	index = sort.SearchInts(sortSlice, intSlice1K[0])
+	iter = tree.Find(strconv.Itoa(intSlice[0]))
+	index = sort.SearchInts(sortSlice, intSlice[0])
 	if iter == tree.End() && index == len(sortSlice) {
 		//ok
-	} else if iter.GetData() == sortSlice[index] {
+	} else if equal(iter, sortSlice[index]) {
 		//ok
 	} else {
 		t.Fatal("Find error")
 	}
-	if tree.Find(max) != tree.End() {
+	if tree.Find(strconv.Itoa(max)) != tree.End() {
 		t.Fatal("find max error", max)
 	}
 	//unique sortslice
@@ -170,7 +185,7 @@ func testSet(t *testing.T, length int, unique bool) {
 	}
 	sortSlice = sortSlice[:uniqueN]
 	//test Erase method
-	for _, val := range intSlice1K {
+	for _, val := range intSlice {
 		if tree.Most(0) != tree.Leftmost() {
 			t.Fatalf("tree most error,%v %v %v %d\n", tree.Most(0), tree.Leftmost(), tree.End(), tree.Size())
 		}
@@ -178,13 +193,13 @@ func testSet(t *testing.T, length int, unique bool) {
 			t.Fatalf("tree most error,%v %v %v %d\n", tree.Most(1), tree.Rightmost(), tree.End(), tree.Size())
 		}
 		//fmt.Println("erase", val)
-		num := tree.Erase(val)
+		num := tree.Erase(strconv.Itoa(val))
 		if num != count[val] {
 			t.Fatal("erase error", num, count[val], val)
 		}
 		delete(count, val)
-		if tree.Count(val) != count[val] {
-			t.Fatal("count error", tree.Count(val), count[val])
+		if tree.Count(strconv.Itoa(val)) != count[val] {
+			t.Fatal("count error", tree.Count(strconv.Itoa(val)), count[val])
 		}
 		_, size := tree.Check()
 		if size != tree.Size() {
@@ -196,8 +211,9 @@ func testSet(t *testing.T, length int, unique bool) {
 		t.Fatal("empty error")
 	}
 	count = make(map[int]int)
-	for _, val := range intSlice1K {
-		_, ok := tree.Insert(val)
+	for _, val := range intSlice {
+		var tmp = val
+		_, ok := tree.Insert(strconv.Itoa(val), &tmp)
 		if !tree.Unique() && !ok || tree.Unique() && ok == (count[val] != 0) {
 			t.Fatal("insert error", ok, count[val], val)
 		}
@@ -206,8 +222,8 @@ func testSet(t *testing.T, length int, unique bool) {
 		} else {
 			count[val]++
 		}
-		if tree.Count(val) != count[val] {
-			t.Fatal("count error", tree.Count(val), count[val])
+		if tree.Count(strconv.Itoa(val)) != count[val] {
+			t.Fatal("count error", tree.Count(strconv.Itoa(val)), count[val])
 		}
 		_, size := tree.Check()
 		if size != tree.Size() {
@@ -215,7 +231,7 @@ func testSet(t *testing.T, length int, unique bool) {
 		}
 	}
 	//test EqualRange and EraseNodeRange
-	for _, val := range intSlice1K {
+	for _, val := range intSlice {
 		if tree.Most(0) != tree.Leftmost() {
 			t.Fatalf("tree most error,%v %v %v %d\n", tree.Most(0), tree.Leftmost(), tree.End(), tree.Size())
 		}
@@ -223,14 +239,14 @@ func testSet(t *testing.T, length int, unique bool) {
 			t.Fatalf("tree most error,%v %v %v %d\n", tree.Most(1), tree.Rightmost(), tree.End(), tree.Size())
 		}
 		//fmt.Println("erase", val)
-		beg, end := tree.EqualRange(val)
+		beg, end := tree.EqualRange(strconv.Itoa(val))
 		num := tree.EraseNodeRange(beg, end)
 		if num != count[val] {
 			t.Fatal("erase error", num, count[val], val)
 		}
 		delete(count, val)
-		if tree.Count(val) != count[val] {
-			t.Fatal("count error", tree.Count(val), count[val])
+		if tree.Count(strconv.Itoa(val)) != count[val] {
+			t.Fatal("count error", tree.Count(strconv.Itoa(val)), count[val])
 		}
 		_, size := tree.Check()
 		if size != tree.Size() {
@@ -242,22 +258,22 @@ func testSet(t *testing.T, length int, unique bool) {
 	}
 }
 
-func TestSet(t *testing.T) {
+func TestMap(t *testing.T) {
 	var testN = 500
 	t.Run("unique", func(t *testing.T) {
 		for i := 0; i < testN; i++ {
-			testSet(t, i+1, true)
+			testMap(t, i+1, true)
 		}
 	})
 	t.Run("not unique", func(t *testing.T) {
 		for i := 0; i < testN; i++ {
-			testSet(t, i+1, false)
+			testMap(t, i+1, false)
 		}
 	})
 	t.Run("unique 1e4", func(t *testing.T) {
-		testSet(t, 1e4, true)
+		testMap(t, 1e4, true)
 	})
 	t.Run("not unique 1e4", func(t *testing.T) {
-		testSet(t, 1e4, false)
+		testMap(t, 1e4, false)
 	})
 }

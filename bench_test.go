@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/cdongyang/library/randint"
-	"github.com/cdongyang/library/rbtree"
+	"github.com/cdongyang/rbtree"
 )
 
 var benchRand = randint.Rand{First: 23456, Add: 12345, Mod: 1e9 + 7}

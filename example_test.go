@@ -6,7 +6,7 @@ import (
 	"testing"
 	"unsafe"
 
-	"github.com/cdongyang/library/rbtree"
+	"github.com/cdongyang/rbtree"
 )
 
 type IntSetNode struct {
